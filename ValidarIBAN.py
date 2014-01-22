@@ -1,10 +1,13 @@
-#! \user\bin\python3
-# Algoritmo verificacion CCC e IBAN
-__author__ = 'sajime'
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# Algoritmo de calculo y verificacion de CCC e IBAN para cuentas
+# bancarias de España.
+
 
 # Multiplicadores Digitos CCC
 lista_entidad_sucursal = [4, 8, 5, 10, 9, 7, 3, 6]
 lista_cuenta_cliente = [1, 2, 4, 8, 5, 10, 9, 7, 3, 6]
+
 
 def digitoEntidadSucursal(entidad, sucursal):
     """Devuelve el dígito D de control de una sucursal bancaria dada.
@@ -66,6 +69,7 @@ def digitoCuenta(numeroCuenta):
     elif digito == 11:
         digito = 0
     return digito
+
 
 def getIBAN_ES(numeroCCC):
     """
