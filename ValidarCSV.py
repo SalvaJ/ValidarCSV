@@ -6,12 +6,41 @@
 # Validador para la entrada de datos por fichero CSV al portal Casaktua
 
 
-import csv, sys, os, math
-import win32com.client    # Libreria para iMacros
+import csv, sys, os, time, logging
+# import win32com.client    # Libreria para iMacros
 
-os.chdir('c:/Python33/learning')
 
-# TODO La carga de constantes debería realizarla a traves de un modulo aparte. (o por proceso de carga de fichero setup)
+# Generar nombre de fichero con fecha y hora
+# Formato: NOMBRE_AAAAMDHm.ext
+# AAAA año
+# M mes, enero es 1, no 01
+# D día, 3, no 03
+# H hora
+# m minutos
+# Args:
+#       prefijo: (str), nombre inicial del fichero
+#       extension: (str), extensión del fichero con el punto (ej. '.log'). Default '.txt'
+# Returns:
+#       nombreFichero: (str), con formato prefijo_AAAAMDHm.ext
+def NombrarFicheroHora(prefijo, extension='.txt'):
+    """
+    :type prefijo: str
+    :type extension: str
+    """
+    nombre = prefijo
+    tiempo = time.localtime(time.time())	# Objeto con atributos del día y la hora
+    diaHora = str(tiempo.tm_year)+str(tiempo.tm_mon)+str(tiempo.tm_mday)+str(tiempo.tm_hour)+str(tiempo.tm_min)
+    nombreFichero = nombre + '_' + diaHora + extension
+    return nombreFichero
+
+
+# Inicia el log a nivel de DEBUG (habrá que cambiarlo a INFO en producción)
+nombreFicheroLog = NombrarFicheroHora('resultado', '.log')
+logging.basicConfig(filename=nombreFicheroLog, level=logging.DEBUG)
+
+# os.chdir('c:/Python33/learning')
+
+# TODO La carga de constantes debería realizarla a traves de un modulo aparte.(o por proceso de carga de fichero setup)
 
 # Definicion de constantes e inicializacion de variables globales
 ordenEncabezado = ['NULO',
@@ -25,16 +54,21 @@ ordenEncabezado = ['NULO',
                    'CARTA_PAGO',
                    'AGENDA']
 
-numeroEncabezados = len(ordenEncabezado) #numero de columnas de encabezados (10 por el momento)
-
-matrizEncabezados = []  #inicializa la matriz contenedora de los encabezados encontrados
+#numero de columnas de encabezados (10 por el momento)
+numeroEncabezados = len(ordenEncabezado)
+#inicializa la matriz contenedora de los encabezados encontrados
+matrizEncabezados = []
 
 
 # Funcion AbrirFicheroCSV()
 #   Abre el fichero 'datos.csv'
 def AbrirFicheroCSV():
     global ficheroEntrada       # global para poder cerrarlo luego
-    ficheroEntrada = open('datos.csv','r')
+    try:
+        ficheroEntrada = open('datos.csv','r')
+    except:
+        logging.error("Error al intentar abrir fichero: 'datos.csv")
+        raise
     lectorFicheroEntrada = csv.reader(ficheroEntrada, delimiter=';')
     return lectorFicheroEntrada
 
@@ -42,7 +76,11 @@ def AbrirFicheroCSV():
 # Funcion CerrarCSV()
 #   Cierra el fichero 'datos.csv'
 def CerrarFicheroCSV():
-    ficheroEntrada.close()
+    try:
+        ficheroEntrada.close()
+    except:
+        logging.error("Error al intentar cerrar fichero: 'datos.csv")
+        raise
     return
 
 
@@ -54,6 +92,19 @@ def ExtraeEncabezados(lectorFicheroEntrada):
         break
     return encabezado
 # TODO: esta funcion no es elegante, tengo que cambiarla
+
+
+# Validar los nombres de encabezados
+def ValidarEncabezados(encabezado):
+    isOK = True
+    for campo in encabezado:
+        if campo in ordenEncabezado:
+            logging.info("%s -> OK", campo)
+        else:
+            logging.warning("%s Título de columna INCORRECTO!!", campo)
+            isOK = False
+    return isOK
+
 
 # Inicializar Matriz de posiciones matrizEncabezados de filas x 3 columnas con ceros.
 # Luego carga la matriz con los siguientes datos
@@ -73,24 +124,28 @@ def IniciarMatriz():
             matrizEncabezados[j][2] = 0
     return matrizEncabezados
 
-# Para ver si en __main__
+# Para ver si es __main__
 print(__name__)
 
 # Lee primera fila del CSV y la carga en 'encabezado'
 encabezado = ExtraeEncabezados(AbrirFicheroCSV())
 CerrarFicheroCSV()
 
-# Llama a la funcion cargadora de la matriz de posiciones.
-matrizEncabezados = IniciarMatriz()
 
-# Imprime el contenido de la matriz de posiciones.
-for campo in range(1,numeroEncabezados):
-    print(matrizEncabezados[campo][0], matrizEncabezados[campo][1], matrizEncabezados[campo][2])
-
-# Imprime cada columna con su dato en el orden correcto.
-lectorFicheroEntrada = AbrirFicheroCSV()
-for linea in lectorFicheroEntrada:
-    for numeroColumna in range(1,numeroEncabezados):
-        print(matrizEncabezados[numeroColumna][1], '\t',      # Titulo de la columna
-              linea[int(matrizEncabezados[numeroColumna][2])])      # Dato de la columna
+if ValidarEncabezados(encabezado):
+    logging.info('FASE FASE VALIDACIÓN TITULOS DE COLUMNAS DE DATOS -> OK')
+    # Llama a la funcion cargadora de la matriz de posiciones.
+    matrizEncabezados = IniciarMatriz()
+    # Imprime el contenido de la matriz de posiciones.
+    for campo in range(1,numeroEncabezados):
+        print(matrizEncabezados[campo][0], matrizEncabezados[campo][1],
+              matrizEncabezados[campo][2])
+    # Imprime cada columna con su dato en el orden correcto.
+    lectorFicheroEntrada = AbrirFicheroCSV()
+    for linea in lectorFicheroEntrada:
+        for numeroColumna in range(1,numeroEncabezados):
+            print(matrizEncabezados[numeroColumna][1], '\t',      # Titulo de la columna
+                  linea[int(matrizEncabezados[numeroColumna][2])])      # Dato de la columna
+else:
+    logging.warning('FASE VALIDACIÓN TITULOS DE COLUMNAS DE DATOS NO SUPERADA. compruebe los nombres de los títulos de las columnas en datos.csv)')
 
