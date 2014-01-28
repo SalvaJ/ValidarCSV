@@ -154,7 +154,8 @@ print(__name__)
 
 # Inicia el log a nivel de DEBUG (habrá que cambiarlo a INFO en producción)
 nombreFicheroLog = NombrarFicheroHora('resultado', '.log')
-logging.basicConfig(filename=nombreFicheroLog, encoding="utf-8", level=logging.DEBUG)
+logging.basicConfig(handlers=[logging.FileHandler(nombreFicheroLog, 'w', 'utf-8')],
+                    level=logging.DEBUG)
 
 # Lee primera fila del CSV y la carga en 'encabezado'
 encabezado = ExtraeEncabezados(AbrirFicheroCSV())
@@ -175,5 +176,5 @@ if ValidarEncabezados(encabezado):
             print(matrizEncabezados[numeroColumna][1], '\t',      # Titulo de la columna
                   linea[int(matrizEncabezados[numeroColumna][2])])      # Dato de la columna
 else:
-    logging.warning('FASE VALIDACIÓN TITULOS DE COLUMNAS DE DATOS NO SUPERADA. compruebe los nombres de los títulos de las columnas en datos.csv)')
+    logging.warning(u'FASE VALIDACIÓN TITULOS DE COLUMNAS DE DATOS NO SUPERADA. compruebe los nombres de los títulos de las columnas en datos.csv)')
     # TODO esto estaría mejor con decoradores de funciones.
